@@ -1,6 +1,6 @@
 import { Column, DataType, Model, Table } from 'sequelize-typescript';
 
-interface UserTabelInterface {
+export interface UserTableInterface {
   name?: string;
   id?: string;
   email?: string;
@@ -11,7 +11,7 @@ interface UserTabelInterface {
 @Table({
   tableName: 'users',
 })
-export class User extends Model<UserTabelInterface> {
+export class User extends Model<UserTableInterface> {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,

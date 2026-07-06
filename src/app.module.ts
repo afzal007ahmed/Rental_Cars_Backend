@@ -3,6 +3,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { config } from '../config/index';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { config } from '../config/index';
       autoLoadModels: true,
       synchronize: true,
     }),
+    AuthModule,
+    UserModule
   ],
   controllers: [AppController],
   providers: [AppService],
