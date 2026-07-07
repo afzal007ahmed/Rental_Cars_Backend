@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { User } from './models/user.model';
+import { User, UserTableInterface } from './models/user.model';
 import bcrypt from 'bcrypt';
 import { RegisterDto } from 'src/auth/dto/register-dto';
+
+interface UserInterface {
+  id: string;
+  guest: string;
+}
 
 @Injectable()
 export class UserService {
@@ -14,5 +19,14 @@ export class UserService {
   }
   async createUser(body: RegisterDto) {
     return (await User.create(body)).dataValues;
+  }
+  async me(user: UserInterface) {
+    if( user.guest ){
+      return { name : "Guest" , id : '0' }
+    }
+    const data = await User.findOne({ where: { id: user.id } })
+    
+    const { password , ...userDetails } = data?.dataValues as UserTableInterface;
+    return userDetails
   }
 }
