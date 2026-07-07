@@ -10,6 +10,11 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
+  app.enableCors({
+    origin: config.cors.origin,
+    credential: true,
+    methods: ['POST', 'PUSH', 'DELETE', 'PATCH', 'GET'],
+  });
   await app.listen(config.server.port ?? 3000);
 }
 bootstrap();

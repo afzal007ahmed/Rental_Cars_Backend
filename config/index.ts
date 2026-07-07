@@ -13,4 +13,7 @@ export const config = {
     secret : process.env.JWT_SECRET! ,
     expiry : 7
   },
+  cors : {
+    origin : process.env.ORIGIN_URL
+  }
 };
