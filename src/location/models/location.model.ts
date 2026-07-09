@@ -1,18 +1,11 @@
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { Availability } from 'src/availability/models/availability.model';
 import { Bookings } from 'src/bookings/models/bookings.model';
 
-export interface UserTableInterface {
-  name?: string;
-  id?: string;
-  email?: string;
-  password?: string;
-  guest?: boolean;
-}
-
 @Table({
-  tableName: 'users',
+  tableName: 'locations',
 })
-export class User extends Model<UserTableInterface> {
+export class Location extends Model {
   @Column({
     type: DataType.UUID,
     defaultValue: DataType.UUIDV4,
@@ -23,26 +16,33 @@ export class User extends Model<UserTableInterface> {
   @HasMany(() => Bookings)
   bookings : Bookings[]
 
+  @HasMany(() => Availability)
+  available: Availability[];
+
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
   name: string;
+
   @Column({
-    type: DataType.BOOLEAN,
+    type: DataType.DECIMAL,
     allowNull: false,
-    defaultValue : false 
   })
-  guest: boolean;
+  long: number;
+  @Column({
+    type: DataType.DECIMAL,
+    allowNull: false,
+  })
+  lat: number;
   @Column({
     type: DataType.STRING,
     allowNull: false,
-    unique: true,
   })
-  email: string;
+  city: string;
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  password: string;
+  state: string;
 }
