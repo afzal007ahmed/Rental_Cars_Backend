@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotAcceptableException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { Op, Sequelize } from 'sequelize';
@@ -10,6 +11,7 @@ import { Availability } from 'src/availability/models/availability.model';
 import { Location } from 'src/location/models/location.model';
 import { Vehicle } from 'src/vehicle/models/vehicle.model';
 import { Bookings } from './models/bookings.model';
+import { User } from 'src/user/models/user.model';
 interface UserDataInterface {
   guest: boolean;
   id: string;
@@ -105,5 +107,28 @@ export class BookingsService {
       await transaction.rollback();
       throw error;
     }
+  }
+  async getABooking(id: string) {
+    const isBookingExists = await Bookings.findOne({
+      where: { id: id },
+      include: [Location],
+    });
+    if (!isBookingExists) {
+      throw new NotFoundException('Booking not found.');
+    }
+    return isBookingExists;
+  }
+  async getBookingOfAUser(id: string) {
+    const isUserExists = await User.findOne({
+      where: { id: id, guest: false },
+    });
+    if (!isUserExists) {
+      throw new NotFoundException('User not found.');
+    }
+    const bookings = await Bookings.findAll({
+      where: { user_id: id },
+      include: [Location],
+    });
+    return bookings;
   }
 }
