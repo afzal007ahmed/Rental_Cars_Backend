@@ -65,6 +65,7 @@ export class LocationService {
       where: {
         location_id: locationId,
         vehicle_id: { [Op.in]: allVehicleIds },
+        status : "inprogress"
       },
     });
 

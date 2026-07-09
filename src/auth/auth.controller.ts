@@ -15,4 +15,9 @@ export class AuthController {
   async register(@Body() body: RegisterDto) {
     return await this.authService.register(body);
   }
+
+  @Post('/guest/login')
+  async guestLogin() {
+    return this.authService.guestLogin();
+  }
 }

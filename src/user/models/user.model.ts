@@ -21,7 +21,7 @@ export class User extends Model<UserTableInterface> {
   declare id: string;
 
   @HasMany(() => Bookings)
-  bookings : Bookings[]
+  bookings: Bookings[];
 
   @Column({
     type: DataType.STRING,
@@ -31,18 +31,17 @@ export class User extends Model<UserTableInterface> {
   @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
-    defaultValue : false 
+    defaultValue: false,
   })
   guest: boolean;
   @Column({
     type: DataType.STRING,
-    allowNull: false,
-    unique: true,
+    allowNull: true,
   })
   email: string;
   @Column({
     type: DataType.STRING,
-    allowNull: false,
+    allowNull: true,
   })
   password: string;
 }

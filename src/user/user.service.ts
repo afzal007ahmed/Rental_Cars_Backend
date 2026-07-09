@@ -21,12 +21,9 @@ export class UserService {
     return (await User.create(body)).dataValues;
   }
   async me(user: UserInterface) {
-    if( user.guest ){
-      return { name : "Guest" , id : '0' }
-    }
-    const data = await User.findOne({ where: { id: user.id } })
-    
-    const { password , ...userDetails } = data?.dataValues as UserTableInterface;
-    return userDetails
+    const data = await User.findOne({ where: { id: user.id } });
+
+    const { password, ...userDetails } = data?.dataValues as UserTableInterface;
+    return userDetails;
   }
 }
