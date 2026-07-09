@@ -5,9 +5,6 @@ import { config } from '../../config/index';
 export class AuthMiddleware implements NestMiddleware {
   use(req: any, res: any, next: (error?: any) => void) {
     try {
-      if (req.body?.guest) {
-        next();
-      }
       const authorization = req.headers.authorization;
       if (!authorization) {
         throw new UnauthorizedException('token is missing');

@@ -40,6 +40,6 @@ import { CheckoutModule } from './checkout/checkout.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('users' );
+    consumer.apply(AuthMiddleware).forRoutes('users' , 'bookings' , 'locations');
   }
 }

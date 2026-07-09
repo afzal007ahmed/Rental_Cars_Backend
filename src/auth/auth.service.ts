@@ -10,10 +10,25 @@ import jwt from 'jsonwebtoken';
 import { config } from '../../config/index';
 import { RegisterDto } from './dto/register-dto';
 import bcrypt from 'bcrypt';
+import { User } from 'src/user/models/user.model';
 
 @Injectable()
 export class AuthService {
   constructor(private readonly userService: UserService) {}
+
+  async guestLogin() {
+    const user = await User.create({
+      name: 'GUEST',
+      guest: true,
+    });
+    const token = jwt.sign(user.dataValues, config.jwt.secret, {
+      expiresIn: `${config.jwt.expiry}d`,
+    });
+    return {
+      token,
+      user: user.dataValues,
+    };
+  }
   async login(body: LoginDto) {
     const isUserExists = await this.userService.getUserByEmail(body.email);
     if (!isUserExists) {

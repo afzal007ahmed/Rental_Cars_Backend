@@ -38,7 +38,7 @@ export class Bookings extends Model {
   @ForeignKey(() => User)
   @Column({
     type: DataType.UUID,
-    allowNull: false,
+    allowNull: true,
   })
   user_id: string;
   @BelongsTo(() => User)
@@ -57,7 +57,7 @@ export class Bookings extends Model {
   to_date: Date;
 
   @Column({
-    type: DataType.ENUM('pending', 'completed', 'cancelled'),
+    type: DataType.ENUM('inprogress', 'completed', 'cancelled'),
     defaultValue: 'pending',
     allowNull: false,
   })
@@ -72,4 +72,17 @@ export class Bookings extends Model {
 
   @BelongsTo(() => Location)
   location: Location;
+
+  @Column({
+    type : DataType.STRING ,
+    allowNull : true 
+  })
+  guest_name : string ;
+
+  @Column({
+    type : DataType.STRING ,
+    allowNull : true 
+  })
+  guest_email : string ;
+  
 }
