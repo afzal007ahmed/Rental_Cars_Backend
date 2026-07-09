@@ -1,4 +1,5 @@
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import { Bookings } from 'src/bookings/models/bookings.model';
 
 export interface UserTableInterface {
   name?: string;
@@ -18,6 +19,10 @@ export class User extends Model<UserTableInterface> {
     primaryKey: true,
   })
   declare id: string;
+
+  @HasMany(() => Bookings)
+  bookings : Bookings[]
+
   @Column({
     type: DataType.STRING,
     allowNull: false,
@@ -26,6 +31,7 @@ export class User extends Model<UserTableInterface> {
   @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
+    defaultValue : false 
   })
   guest: boolean;
   @Column({

@@ -1,9 +1,12 @@
 import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
 import { Availability } from 'src/availability/models/availability.model';
+import { Bookings } from 'src/bookings/models/bookings.model';
+import { Images } from 'src/images/models/image.model';
 
 @Table({
   tableName: 'vehicles',
 })
+
 export class Vehicle extends Model {
   @Column({
     type: DataType.UUID,
@@ -11,8 +14,15 @@ export class Vehicle extends Model {
     primaryKey: true,
   })
   declare id: string;
+ 
   @HasMany(() => Availability)
    availability : Availability[]
+
+  @HasMany(() => Images) 
+  images : Images[] 
+
+  @HasMany(() => Bookings)
+  bookings : Bookings[]
 
   @Column({
     type: DataType.STRING,
@@ -25,7 +35,7 @@ export class Vehicle extends Model {
   })
   brand: string;
   @Column({
-    type: DataType.NUMBER,
+    type: DataType.INTEGER,
     allowNull: false,
   })
   price: number;
