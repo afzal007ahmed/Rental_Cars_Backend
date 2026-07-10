@@ -131,4 +131,17 @@ export class BookingsService {
     });
     return bookings;
   }
+  async cancelBooking(id: string) {
+    const isBookingExists = await Bookings.findOne({ where: { id: id } });
+    if (!isBookingExists) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (isBookingExists.dataValues.status === 'cancelled') {
+      throw new ConflictException('Booking is already cancelled.');
+    }
+    await Bookings.update({ status: 'cancelled' }, { where: { id: id } });
+    return {
+      success: true,
+    };
+  }
 }

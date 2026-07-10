@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   NotAcceptableException,
   Param,
@@ -47,5 +48,9 @@ export class BookingsController {
       throw new BadRequestException('Please send a valid booking id.');
     }
     return this.bookingService.getABooking(id);
+  }
+  @Delete('/:id')
+  async cancelBooking(@Param('id') id) {
+    return this.bookingService.cancelBooking(id);
   }
 }
