@@ -61,8 +61,8 @@ export class BookingsService {
           location_id: locationId,
           vehicle_id: vehicleId,
           status: 'inprogress',
-          to_date: { [Op.gt]: startDate },
-          start_date: { [Op.lt]: toDate },
+          to_date: { [Op.gte]: startDate },
+          start_date: { [Op.lte]: toDate },
         },
         transaction,
       });
