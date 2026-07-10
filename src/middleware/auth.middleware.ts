@@ -24,7 +24,7 @@ export class AuthMiddleware implements NestMiddleware {
       req.user = user;
       next();
     } catch (error) {
-      throw new UnauthorizedException(error.meesage);
+      throw new UnauthorizedException(error.message);
     }
   }
 }
