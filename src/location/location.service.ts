@@ -34,8 +34,8 @@ export class LocationService {
   }
   async findVehiclesAtALocation(
     locationId: string,
-    startDate: Date,
-    toDate: Date,
+    startDate: string,
+    toDate: string,
   ) {
     const isLocationPresent = await Location.findOne({
       where: { id: locationId },
@@ -71,6 +71,8 @@ export class LocationService {
 
     const unitsBookedPerVehicle = bookings.reduce((first, second) => {
       second = second.dataValues;
+      console.log( second , startDate , toDate )
+
       if (!first[second.vehicle_id]) {
         first[second.vehicle_id] = 0;
       }
@@ -79,6 +81,7 @@ export class LocationService {
       }
       return first;
     }, {});
+
 
     const vehicleImages = await Images.findAll({
       where: { vehicle_id: { [Op.in]: allVehicleIds } },
@@ -94,10 +97,10 @@ export class LocationService {
     const finalData = vehiclesData.map((vehicle) => {
       vehicle = vehicle.dataValues;
       const data: any = { ...vehicle };
-      const availabile_units =
+      const available_units =
         vehicle.units - (unitsBookedPerVehicle[vehicle.vehicle_id] || 0);
-      data.status = availabile_units ? 'available' : 'sold_out';
-      data.availabile_units = availabile_units;
+      data.status = available_units ? 'available' : 'sold_out';
+      data.available_units = available_units;
       return data;
     });
 

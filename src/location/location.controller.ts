@@ -22,14 +22,18 @@ export class LocationController {
   @Get('/:id')
   async getVehiclesByLocationId(
     @Param('id') id: string,
-    @Query('start_date') startDate: Date,
-    @Query('to_date') toDate: Date,
+    @Query('start_date') start_date: string,
+    @Query('to_date') to_date: string,
   ) {
-    startDate = new Date(startDate);
-    toDate = new Date(toDate);
-    if ((isNaN(toDate.getDate()) || isNaN(startDate.getDate())) || ( startDate >= toDate)) {
+    const startDate = new Date(start_date);
+    const toDate = new Date(to_date);
+    if (
+      isNaN(toDate.getTime()) ||
+      isNaN(startDate.getTime()) ||
+      startDate >= toDate
+    ) {
       throw new BadRequestException();
     }
-    return this.locationService.findVehiclesAtALocation(id, startDate, toDate);
+    return this.locationService.findVehiclesAtALocation(id, start_date, to_date);
   }
 }

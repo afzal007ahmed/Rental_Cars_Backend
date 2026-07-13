@@ -45,16 +45,16 @@ export class Bookings extends Model {
   user: User;
 
   @Column({
-    type: DataType.DATE,
+    type: DataType.STRING,
     allowNull: false,
   })
-  start_date: Date;
+  start_date: string;
 
   @Column({
-    type: DataType.DATE,
+    type: DataType.STRING,
     allowNull: false,
   })
-  to_date: Date;
+  to_date: string;
 
   @Column({
     type: DataType.ENUM('inprogress', 'completed', 'cancelled'),
@@ -68,7 +68,7 @@ export class Bookings extends Model {
     type: DataType.UUID,
     allowNull: false,
   })
-  location_id: Date;
+  location_id: string;
 
   @BelongsTo(() => Location)
   location: Location;

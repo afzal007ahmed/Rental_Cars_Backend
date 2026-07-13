@@ -13,11 +13,11 @@ export class BookingDto {
   @IsUUID()
   vehicleId: string;
 
-  @IsDateString()
-  startDate: Date;
+  @IsString()
+  startDate: string;
 
-  @IsDateString()
-  toDate: Date;
+  @IsString()
+  toDate: string;
 
   @IsOptional()
   @IsString()

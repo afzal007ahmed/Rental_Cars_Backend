@@ -17,14 +17,22 @@ interface UserDataInterface {
   id: string;
 }
 
+interface BookingUpdateInterface {
+  vehicle_id?: string;
+  start_date?: string;
+  end_date?: string;
+  guest_name?: string;
+  guest_email?: string;
+}
+
 @Injectable()
 export class BookingsService {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
   async bookAVehicle(
     locationId: string,
     vehicleId: string,
-    startDate: Date,
-    toDate: Date,
+    startDate: string,
+    toDate: string,
     user: UserDataInterface,
     guestName?: string,
     guestEmail?: string,
@@ -79,9 +87,10 @@ export class BookingsService {
         );
       }
       const days =
-        (toDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        (new Date(toDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24);
 
       const totalPrice = days * isVehicleExists.dataValues.price;
+      console.log( toDate , startDate)
       const booking = await Bookings.create(
         {
           total_price: totalPrice,
@@ -111,14 +120,14 @@ export class BookingsService {
   async getABooking(id: string) {
     const isBookingExists = await Bookings.findOne({
       where: { id: id },
-      include: [Location],
+      include: [{ model: Location }, { model: Vehicle }, { model: User }],
     });
     if (!isBookingExists) {
       throw new NotFoundException('Booking not found.');
     }
     return isBookingExists;
   }
-  async getBookingOfAUser(id: string) {
+  async getAllBookingsOfAUser(id: string) {
     const isUserExists = await User.findOne({
       where: { id: id, guest: false },
     });
@@ -127,7 +136,11 @@ export class BookingsService {
     }
     const bookings = await Bookings.findAll({
       where: { user_id: id },
-      include: [Location],
+      include: [
+        { model: Location },
+        { model: Vehicle },
+        { model: User, attributes: ['name', 'email', 'id', 'guest'] },
+      ],
     });
     return bookings;
   }
@@ -143,5 +156,22 @@ export class BookingsService {
     return {
       success: true,
     };
+  }
+  async updateBookingBytId(
+    user: UserDataInterface,
+    id: string,
+    data: BookingUpdateInterface,
+  ) {
+    const isBookingExists = await Bookings.findOne({
+      where: { id: id, user_id: user.id, status: 'inprogress' },
+    });
+    if (!isBookingExists) {
+      throw new NotFoundException(
+        'Booking not found/ Booking is not of this user.',
+      );
+    }
+
+    await Bookings.update({ ...data }, { where: { id: id, user_id: user.id } });
+    return { success: true };
   }
 }
