@@ -45,4 +45,9 @@ export class Location extends Model {
     allowNull: false,
   })
   state: string;
+  @Column({
+    type : DataType.BOOLEAN ,
+    defaultValue : true 
+  })
+  active : boolean ;
 }

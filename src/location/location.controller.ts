@@ -24,6 +24,8 @@ export class LocationController {
     @Param('id') id: string,
     @Query('start_date') start_date: string,
     @Query('to_date') to_date: string,
+    @Query('start_time') start_time: string,
+    @Query('end_time') end_time: string,
   ) {
     const startDate = new Date(start_date);
     const toDate = new Date(to_date);
@@ -34,6 +36,12 @@ export class LocationController {
     ) {
       throw new BadRequestException();
     }
-    return this.locationService.findVehiclesAtALocation(id, start_date, to_date);
+    return this.locationService.findVehiclesAtALocation(
+      id,
+      start_date,
+      to_date,
+      start_time , 
+      end_time
+    );
   }
 }

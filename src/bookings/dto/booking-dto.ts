@@ -1,9 +1,9 @@
-import { 
-  IsDateString, 
-  IsEmail, 
-  IsOptional, 
-  IsString, 
-  IsUUID 
+import {
+  IsDateString,
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsUUID,
 } from 'class-validator';
 
 export class BookingDto {
@@ -26,4 +26,10 @@ export class BookingDto {
   @IsOptional()
   @IsEmail()
   guestEmail?: string;
+
+  @IsString()
+  start_time: string;
+
+  @IsString()
+  end_time: string;
 }

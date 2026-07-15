@@ -23,6 +23,8 @@ interface BookingUpdateInterface {
   end_date?: string;
   guest_name?: string;
   guest_email?: string;
+  start_time?: string;
+  end_time?: string;
 }
 
 @Injectable()
@@ -34,6 +36,8 @@ export class BookingsService {
     startDate: string,
     toDate: string,
     user: UserDataInterface,
+    startTime: string,
+    endTime: string,
     guestName?: string,
     guestEmail?: string,
   ) {
@@ -69,8 +73,14 @@ export class BookingsService {
           location_id: locationId,
           vehicle_id: vehicleId,
           status: 'inprogress',
-          to_date: { [Op.gte]: startDate },
-          start_date: { [Op.lte]: toDate },
+          [Op.and]: [
+            Sequelize.literal(
+              `(start_date::date + start_time::time) <= ('${toDate}'::date + '${endTime}'::time)`,
+            ),
+            Sequelize.literal(
+              `(to_date::date + end_time::time) >= ('${startDate}'::date + '${startTime}'::time)`,
+            ),
+          ],
         },
         transaction,
       });
@@ -86,11 +96,60 @@ export class BookingsService {
           'This vehicle is not available for the selected time slot.',
         );
       }
+
+      console.log(availability.dataValues.units - allBookings.length === 1);
+      if (availability.dataValues.units - allBookings.length === 1) {
+        const allBookings = await Bookings.findAll({
+          attributes: [
+            'location_id',
+            'vehicle_id',
+            [Sequelize.fn('COUNT', Sequelize.col('status')), 'total'],
+          ],
+          where: {
+            location_id: locationId,
+            status: 'inprogress',
+          },
+          group: ['location_id', 'vehicle_id'],
+        });
+        const vehicleBookingsMap = {};
+
+        for (let i = 0; i < allBookings.length; i++) {
+          const booking = allBookings[i].dataValues;
+          vehicleBookingsMap[booking.vehicle_id] = Number(booking.total);
+        }
+
+        const allVehicles = await Availability.findAll({
+          attributes: ['vehicle_id', 'units'],
+          where: { location_id: locationId },
+        });
+
+        let outOfVehicles = true;
+        for (let i = 0; i < allVehicles.length; i++) {
+          if (allVehicles[i].dataValues.vehicle_id === vehicleId) {
+            continue;
+          }
+          const bookedUnits =
+            vehicleBookingsMap[allVehicles[i].dataValues.vehicle_id];
+          const totalUnits = allVehicles[i].dataValues.units;
+          if ((bookedUnits || 0) < totalUnits) {
+            outOfVehicles = false;
+            break;
+          }
+        }
+        console.log(outOfVehicles, allBookings);
+        if (outOfVehicles) {
+          await Location.update(
+            { active: false },
+            { where: { id: locationId } },
+          );
+        }
+      }
       const days =
-        (new Date(toDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24);
+        (new Date(toDate).getTime() - new Date(startDate).getTime()) /
+        (1000 * 60 * 60 * 24);
 
       const totalPrice = days * isVehicleExists.dataValues.price;
-      console.log( toDate , startDate)
+
       const booking = await Bookings.create(
         {
           total_price: totalPrice,
@@ -104,6 +163,9 @@ export class BookingsService {
           }),
           ...(!user.guest && { user_id: user.id }),
           status: 'inprogress',
+          start_time: startTime,
+          end_time: endTime,
+          vehicle_price: isVehicleExists.dataValues.price,
         },
         { transaction },
       );
@@ -167,7 +229,7 @@ export class BookingsService {
     });
     if (!isBookingExists) {
       throw new NotFoundException(
-        'Booking not found/ Booking is not of this user.',
+        'Booking not found/ Booking is not of this user or not in inprogress.',
       );
     }
 

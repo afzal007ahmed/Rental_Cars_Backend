@@ -36,6 +36,8 @@ export class LocationService {
     locationId: string,
     startDate: string,
     toDate: string,
+    start_time: string,
+    end_time: string,
   ) {
     const isLocationPresent = await Location.findOne({
       where: { id: locationId },
@@ -65,23 +67,31 @@ export class LocationService {
       where: {
         location_id: locationId,
         vehicle_id: { [Op.in]: allVehicleIds },
-        status : "inprogress"
+        status: 'inprogress',
       },
     });
 
     const unitsBookedPerVehicle = bookings.reduce((first, second) => {
       second = second.dataValues;
-      console.log( second , startDate , toDate )
 
       if (!first[second.vehicle_id]) {
         first[second.vehicle_id] = 0;
       }
-      if (second.start_date <= toDate && second.to_date >= startDate) {
+      const existingStart = new Date(
+        `${second.start_date}T${second.start_time}`,
+      );
+
+      const existingEnd = new Date(`${second.to_date}T${second.end_time}`);
+
+      const requestedStart = new Date(`${startDate}T${start_time}`);
+
+      const requestedEnd = new Date(`${toDate}T${end_time}`);
+
+      if (existingStart <= requestedEnd && existingEnd >= requestedStart) {
         first[second.vehicle_id]++;
       }
       return first;
     }, {});
-
 
     const vehicleImages = await Images.findAll({
       where: { vehicle_id: { [Op.in]: allVehicleIds } },

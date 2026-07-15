@@ -22,20 +22,21 @@ export class BookingsController {
     const to_date = new Date(body.toDate);
     const start_date = new Date(body.startDate);
 
-
     if (isNaN(to_date.getDate()) || isNaN(start_date.getDate())) {
       throw new NotAcceptableException('Dates are not in the correct format.');
     }
-    if( start_date >= to_date ) {
-      throw new BadRequestException("It's not a valid range.")
+    if (start_date >= to_date) {
+      throw new BadRequestException("It's not a valid range.");
     }
 
     return this.bookingService.bookAVehicle(
       body.locationId,
       body.vehicleId,
-      body.startDate ,
-      body.toDate ,
+      body.startDate,
+      body.toDate,
       req.user,
+      body.start_time,
+      body.end_time,
       body.guestName,
       body.guestEmail,
     );

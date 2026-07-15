@@ -74,15 +74,33 @@ export class Bookings extends Model {
   location: Location;
 
   @Column({
-    type : DataType.STRING ,
-    allowNull : true 
+    type: DataType.STRING,
+    allowNull: true,
   })
-  guest_name : string ;
+  guest_name: string;
 
   @Column({
-    type : DataType.STRING ,
-    allowNull : true 
+    type: DataType.STRING,
+    allowNull: true,
   })
-  guest_email : string ;
+  guest_email: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  start_time: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  end_time: string;
+
+  @Column({
+    type : DataType.INTEGER ,
+    allowNull : false 
+  })
+  vehicle_price : number ;
   
 }

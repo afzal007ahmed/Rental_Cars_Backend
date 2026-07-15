@@ -1,9 +1,6 @@
-import { IsOptional, IsString, IsUUID , IsEmail} from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsEmail } from 'class-validator';
 
 export class BookingUpdateDto {
-  @IsUUID()
-  @IsOptional()
-  vehicle_id: string;
 
   @IsString()
   @IsOptional()
@@ -20,4 +17,12 @@ export class BookingUpdateDto {
   @IsOptional()
   @IsEmail()
   guest_email: string;
+
+  @IsString()
+  @IsOptional()
+  start_time: string;
+
+  @IsString()
+  @IsOptional()
+  end_time: string;
 }
