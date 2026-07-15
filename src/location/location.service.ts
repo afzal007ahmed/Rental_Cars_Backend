@@ -20,6 +20,9 @@ function findDistanceQuery(long: number, lat: number) {
 
 @Injectable()
 export class LocationService {
+  async getAllLocations() {
+    return await Location.findAll() ;
+  }
   async findLocationInTheRange(long: number, lat: number) {
     const range = 50;
     const distanceQuery = findDistanceQuery(long, lat);

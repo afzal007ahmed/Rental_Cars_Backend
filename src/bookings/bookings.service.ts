@@ -25,6 +25,7 @@ interface BookingUpdateInterface {
   guest_email?: string;
   start_time?: string;
   end_time?: string;
+  drop_location_id?: string;
 }
 
 @Injectable()
@@ -40,6 +41,7 @@ export class BookingsService {
     endTime: string,
     guestName?: string,
     guestEmail?: string,
+    dropLocationId?: string,
   ) {
     const transaction = await this.sequelize.transaction();
 
@@ -97,7 +99,6 @@ export class BookingsService {
         );
       }
 
-      console.log(availability.dataValues.units - allBookings.length === 1);
       if (availability.dataValues.units - allBookings.length === 1) {
         const allBookings = await Bookings.findAll({
           attributes: [
@@ -136,7 +137,6 @@ export class BookingsService {
             break;
           }
         }
-        console.log(outOfVehicles, allBookings);
         if (outOfVehicles) {
           await Location.update(
             { active: false },
@@ -162,6 +162,7 @@ export class BookingsService {
             guest_email: guestEmail,
           }),
           ...(!user.guest && { user_id: user.id }),
+          ...(dropLocationId && { drop_location_id: dropLocationId }),
           status: 'inprogress',
           start_time: startTime,
           end_time: endTime,
@@ -182,7 +183,7 @@ export class BookingsService {
   async getABooking(id: string) {
     const isBookingExists = await Bookings.findOne({
       where: { id: id },
-      include: [{ model: Location }, { model: Vehicle }, { model: User }],
+      include: [{ model: Location , as : "pickupLocation"} , { model : Location , as : "dropLocation"}, { model: Vehicle }, { model: User }],
     });
     if (!isBookingExists) {
       throw new NotFoundException('Booking not found.');
@@ -199,7 +200,8 @@ export class BookingsService {
     const bookings = await Bookings.findAll({
       where: { user_id: id },
       include: [
-        { model: Location },
+        { model: Location, as: 'pickupLocation' },
+        { model : Location , as : "dropLocation"} ,
         { model: Vehicle },
         { model: User, attributes: ['name', 'email', 'id', 'guest'] },
       ],

@@ -70,8 +70,11 @@ export class Bookings extends Model {
   })
   location_id: string;
 
-  @BelongsTo(() => Location)
-  location: Location;
+  @BelongsTo(() => Location, {
+    foreignKey: 'location_id',
+    as: 'pickupLocation',
+  })
+  pickup_location: Location;
 
   @Column({
     type: DataType.STRING,
@@ -98,9 +101,18 @@ export class Bookings extends Model {
   end_time: string;
 
   @Column({
-    type : DataType.INTEGER ,
-    allowNull : false 
+    type: DataType.INTEGER,
+    allowNull: false,
   })
-  vehicle_price : number ;
-  
+  vehicle_price: number;
+
+  @ForeignKey(() => Location)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  drop_location_id: string;
+
+  @BelongsTo(() => Location, { foreignKey: 'drop_location_id', as: 'dropLocation' })
+  drop_location: Location;
 }

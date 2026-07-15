@@ -39,6 +39,7 @@ export class BookingsController {
       body.end_time,
       body.guestName,
       body.guestEmail,
+      body.drop_location_id
     );
   }
 

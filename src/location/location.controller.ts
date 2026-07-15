@@ -12,7 +12,11 @@ import { LocationService } from './location.service';
 @Controller('locations')
 export class LocationController {
   constructor(private readonly locationService: LocationService) {}
-  @Get('')
+  @Get('/')
+  async allLocations() {
+    return await this.locationService.getAllLocations()
+  }
+  @Get('/range')
   async getAvailableVehiclesInThatRange(
     @Query('long', ParseFloatPipe) long: number,
     @Query('lat', ParseFloatPipe) lat: number,
@@ -40,8 +44,8 @@ export class LocationController {
       id,
       start_date,
       to_date,
-      start_time , 
-      end_time
+      start_time,
+      end_time,
     );
   }
 }

@@ -32,4 +32,9 @@ export class BookingDto {
 
   @IsString()
   end_time: string;
+  
+  @IsUUID()
+  @IsOptional() 
+  drop_location_id : string 
+
 }
