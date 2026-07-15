@@ -17,16 +17,21 @@ export class AuthService {
   constructor(private readonly userService: UserService) {}
 
   async guestLogin() {
-    const user = await User.create({
-      name: 'GUEST',
-      guest: true,
-    });
-    const token = jwt.sign(user.dataValues, config.jwt.secret, {
-      expiresIn: `${config.jwt.expiry}d`,
-    });
+    const token = jwt.sign(
+      {
+        guest: true,
+      },
+      config.jwt.secret,
+      {
+        expiresIn: `${config.jwt.expiry}d`,
+      },
+    );
     return {
       token,
-      user: user.dataValues,
+      user: {
+        name: 'GUEST',
+        guest: true,
+      },
     };
   }
   async login(body: LoginDto) {
