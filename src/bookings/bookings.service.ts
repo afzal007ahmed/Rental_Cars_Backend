@@ -99,51 +99,51 @@ export class BookingsService {
         );
       }
 
-      if (availability.dataValues.units - allBookings.length === 1) {
-        const allBookings = await Bookings.findAll({
-          attributes: [
-            'location_id',
-            'vehicle_id',
-            [Sequelize.fn('COUNT', Sequelize.col('status')), 'total'],
-          ],
-          where: {
-            location_id: locationId,
-            status: 'inprogress',
-          },
-          group: ['location_id', 'vehicle_id'],
-        });
-        const vehicleBookingsMap = {};
+      // if (availability.dataValues.units - allBookings.length === 1) {
+      //   const allBookings = await Bookings.findAll({
+      //     attributes: [
+      //       'location_id',
+      //       'vehicle_id',
+      //       [Sequelize.fn('COUNT', Sequelize.col('status')), 'total'],
+      //     ],
+      //     where: {
+      //       location_id: locationId,
+      //       status: 'inprogress',
+      //     },
+      //     group: ['location_id', 'vehicle_id'],
+      //   });
+      //   const vehicleBookingsMap = {};
 
-        for (let i = 0; i < allBookings.length; i++) {
-          const booking = allBookings[i].dataValues;
-          vehicleBookingsMap[booking.vehicle_id] = Number(booking.total);
-        }
+      //   for (let i = 0; i < allBookings.length; i++) {
+      //     const booking = allBookings[i].dataValues;
+      //     vehicleBookingsMap[booking.vehicle_id] = Number(booking.total);
+      //   }
 
-        const allVehicles = await Availability.findAll({
-          attributes: ['vehicle_id', 'units'],
-          where: { location_id: locationId },
-        });
+      //   const allVehicles = await Availability.findAll({
+      //     attributes: ['vehicle_id', 'units'],
+      //     where: { location_id: locationId },
+      //   });
 
-        let outOfVehicles = true;
-        for (let i = 0; i < allVehicles.length; i++) {
-          if (allVehicles[i].dataValues.vehicle_id === vehicleId) {
-            continue;
-          }
-          const bookedUnits =
-            vehicleBookingsMap[allVehicles[i].dataValues.vehicle_id];
-          const totalUnits = allVehicles[i].dataValues.units;
-          if ((bookedUnits || 0) < totalUnits) {
-            outOfVehicles = false;
-            break;
-          }
-        }
-        if (outOfVehicles) {
-          await Location.update(
-            { active: false },
-            { where: { id: locationId } },
-          );
-        }
-      }
+      //   let outOfVehicles = true;
+      //   for (let i = 0; i < allVehicles.length; i++) {
+      //     if (allVehicles[i].dataValues.vehicle_id === vehicleId) {
+      //       continue;
+      //     }
+      //     const bookedUnits =
+      //       vehicleBookingsMap[allVehicles[i].dataValues.vehicle_id];
+      //     const totalUnits = allVehicles[i].dataValues.units;
+      //     if ((bookedUnits || 0) < totalUnits) {
+      //       outOfVehicles = false;
+      //       break;
+      //     }
+      //   }
+      //   if (outOfVehicles) {
+      //     await Location.update(
+      //       { active: false },
+      //       { where: { id: locationId } },
+      //     );
+      //   }
+      // }
       const days =
         (new Date(toDate).getTime() - new Date(startDate).getTime()) /
         (1000 * 60 * 60 * 24);
@@ -222,10 +222,10 @@ export class BookingsService {
       throw new ConflictException('Booking is already cancelled.');
     }
     await Bookings.update({ status: 'cancelled' }, { where: { id: id } });
-    await Location.update(
-      { active: true },
-      { where: { id: isBookingExists.dataValues.location_id } },
-    );
+    // await Location.update(
+    //   { active: true },
+    //   { where: { id: isBookingExists.dataValues.location_id } },
+    // );
     return {
       success: true,
     };
