@@ -4,8 +4,5 @@ import { Vehicle } from './models/vehicle.model';
 
 @Module({
   imports: [SequelizeModule.forFeature([Vehicle])],
-  controllers: [],
-  providers: [],
-  exports: [],
 })
 export class VehicleModule {}

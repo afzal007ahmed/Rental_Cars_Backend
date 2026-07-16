@@ -6,7 +6,6 @@ import { BookingsService } from './bookings.service';
 
 @Module({
   imports: [SequelizeModule.forFeature([Bookings])],
-  exports: [],
   providers: [BookingsService],
   controllers: [BookingsController],
 })

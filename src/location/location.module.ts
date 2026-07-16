@@ -7,7 +7,6 @@ import { LocationController } from './location.controller';
 @Module({
   imports: [SequelizeModule.forFeature([Location])],
   providers: [ LocationService],
-  exports: [],
   controllers: [LocationController],
 })
 export class LocationModule {}

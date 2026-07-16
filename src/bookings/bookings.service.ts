@@ -244,7 +244,11 @@ export class BookingsService {
       );
     }
 
-    await Bookings.update({ ...data }, { where: { id: id, user_id: user.id } });
+    const fromDate = new Date(isBookingExists.dataValues.start_date ) ;
+    const endDate = new Date( isBookingExists.dataValues.to_date )
+    const totalPrice =  ( endDate.getDate() - fromDate.getDate() ) * ( isBookingExists.dataValues.vehicle_price ) ;  
+
+    await Bookings.update({ ...data , total_price : totalPrice }, { where: { id: id, user_id: user.id } });
     return { success: true };
   }
 }
