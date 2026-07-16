@@ -183,7 +183,12 @@ export class BookingsService {
   async getABooking(id: string) {
     const isBookingExists = await Bookings.findOne({
       where: { id: id },
-      include: [{ model: Location , as : "pickupLocation"} , { model : Location , as : "dropLocation"}, { model: Vehicle }, { model: User }],
+      include: [
+        { model: Location, as: 'pickupLocation' },
+        { model: Location, as: 'dropLocation' },
+        { model: Vehicle },
+        { model: User },
+      ],
     });
     if (!isBookingExists) {
       throw new NotFoundException('Booking not found.');
@@ -201,7 +206,7 @@ export class BookingsService {
       where: { user_id: id },
       include: [
         { model: Location, as: 'pickupLocation' },
-        { model : Location , as : "dropLocation"} ,
+        { model: Location, as: 'dropLocation' },
         { model: Vehicle },
         { model: User, attributes: ['name', 'email', 'id', 'guest'] },
       ],
@@ -217,6 +222,10 @@ export class BookingsService {
       throw new ConflictException('Booking is already cancelled.');
     }
     await Bookings.update({ status: 'cancelled' }, { where: { id: id } });
+    await Location.update(
+      { active: true },
+      { where: { id: isBookingExists.dataValues.location_id } },
+    );
     return {
       success: true,
     };
