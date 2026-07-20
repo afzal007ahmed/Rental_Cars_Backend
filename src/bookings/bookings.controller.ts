@@ -13,6 +13,7 @@ import {
 import { BookingDto } from './dto/booking-dto';
 import { BookingsService } from './bookings.service';
 import { BookingUpdateDto } from './dto/booking-update-dto';
+import { isValidDate } from 'src/utils/dateValidator';
 
 @Controller('bookings')
 export class BookingsController {
@@ -22,14 +23,14 @@ export class BookingsController {
     const to_date = new Date(body.toDate);
     const start_date = new Date(body.startDate);
 
-    if (isNaN(to_date.getDate()) || isNaN(start_date.getDate())) {
+    if (!isValidDate(body.toDate) || !isValidDate(body.startDate)) {
       throw new NotAcceptableException('Dates are not in the correct format.');
     }
     if (start_date >= to_date) {
       throw new BadRequestException("It's not a valid range.");
     }
 
-    return this.bookingService.bookAVehicle(
+    return await this.bookingService.bookAVehicle(
       body.locationId,
       body.vehicleId,
       body.startDate,
@@ -37,9 +38,10 @@ export class BookingsController {
       req.user,
       body.start_time,
       body.end_time,
+      body.lock_key,
       body.guestName,
       body.guestEmail,
-      body.drop_location_id
+      body.drop_location_id,
     );
   }
 
@@ -55,11 +57,11 @@ export class BookingsController {
     if (!id) {
       throw new BadRequestException('Please send a valid booking id.');
     }
-    return this.bookingService.getABooking(id);
+    return await this.bookingService.getABooking(id);
   }
   @Delete('/:id')
-  async cancelBooking(@Param('id') id) {
-    return this.bookingService.cancelBooking(id);
+  async cancelBooking(@Param('id') id: string) {
+    return await this.bookingService.cancelBooking(id);
   }
   @Patch('/:id')
   async updateBookingById(
@@ -69,15 +71,14 @@ export class BookingsController {
   ) {
     let start_date: string = data.start_date;
     let end_date: string = data.end_date;
+
     if (start_date) {
-      const startDate = new Date(start_date);
-      if (isNaN(startDate.getTime())) {
+      if (!isValidDate(start_date)) {
         throw new BadRequestException('Start date is invalid');
       }
     }
     if (end_date) {
-      const endDate = new Date(end_date);
-      if (isNaN(endDate.getTime())) {
+      if (!isValidDate(end_date)) {
         throw new BadRequestException('end date is invalid');
       }
     }

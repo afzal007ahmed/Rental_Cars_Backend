@@ -8,12 +8,13 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
+      forbidNonWhitelisted : true 
     }),
   );
   app.enableCors({
     origin: config.cors.origin,
     credential: true,
-    methods: ['POST', 'PUSH', 'DELETE', 'PATCH', 'GET'],
+    methods: ['*'],
   });
   await app.listen(config.server.port ?? 3000);
 }

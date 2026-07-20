@@ -10,7 +10,6 @@ import jwt from 'jsonwebtoken';
 import { config } from '../../config/index';
 import { RegisterDto } from './dto/register-dto';
 import bcrypt from 'bcrypt';
-import { User } from 'src/user/models/user.model';
 
 @Injectable()
 export class AuthService {

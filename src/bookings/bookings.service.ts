@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  GoneException,
+  Inject,
   Injectable,
   NotAcceptableException,
   NotFoundException,
@@ -12,6 +14,7 @@ import { Location } from 'src/location/models/location.model';
 import { Vehicle } from 'src/vehicle/models/vehicle.model';
 import { Bookings } from './models/bookings.model';
 import { User } from 'src/user/models/user.model';
+import Redis from 'ioredis';
 interface UserDataInterface {
   guest: boolean;
   id: string;
@@ -30,7 +33,10 @@ interface BookingUpdateInterface {
 
 @Injectable()
 export class BookingsService {
-  constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
+  constructor(
+    @InjectConnection() private readonly sequelize: Sequelize,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
+  ) {}
   async bookAVehicle(
     locationId: string,
     vehicleId: string,
@@ -39,10 +45,17 @@ export class BookingsService {
     user: UserDataInterface,
     startTime: string,
     endTime: string,
+    lock_key : string ,
     guestName?: string,
     guestEmail?: string,
     dropLocationId?: string,
   ) {
+    // validate lock before opening transaction
+    const lock = await this.redis.ttl(lock_key);
+    if (lock === -2) {
+      throw new GoneException('Session expired. Please go back to checkout.');
+    }
+
     const transaction = await this.sequelize.transaction();
 
     try {
@@ -68,6 +81,7 @@ export class BookingsService {
         transaction,
         lock: transaction.LOCK.UPDATE,
       });
+
 
       //all booking which are overlapping
       const allBookings = await Bookings.findAll({
@@ -99,51 +113,6 @@ export class BookingsService {
         );
       }
 
-      // if (availability.dataValues.units - allBookings.length === 1) {
-      //   const allBookings = await Bookings.findAll({
-      //     attributes: [
-      //       'location_id',
-      //       'vehicle_id',
-      //       [Sequelize.fn('COUNT', Sequelize.col('status')), 'total'],
-      //     ],
-      //     where: {
-      //       location_id: locationId,
-      //       status: 'inprogress',
-      //     },
-      //     group: ['location_id', 'vehicle_id'],
-      //   });
-      //   const vehicleBookingsMap = {};
-
-      //   for (let i = 0; i < allBookings.length; i++) {
-      //     const booking = allBookings[i].dataValues;
-      //     vehicleBookingsMap[booking.vehicle_id] = Number(booking.total);
-      //   }
-
-      //   const allVehicles = await Availability.findAll({
-      //     attributes: ['vehicle_id', 'units'],
-      //     where: { location_id: locationId },
-      //   });
-
-      //   let outOfVehicles = true;
-      //   for (let i = 0; i < allVehicles.length; i++) {
-      //     if (allVehicles[i].dataValues.vehicle_id === vehicleId) {
-      //       continue;
-      //     }
-      //     const bookedUnits =
-      //       vehicleBookingsMap[allVehicles[i].dataValues.vehicle_id];
-      //     const totalUnits = allVehicles[i].dataValues.units;
-      //     if ((bookedUnits || 0) < totalUnits) {
-      //       outOfVehicles = false;
-      //       break;
-      //     }
-      //   }
-      //   if (outOfVehicles) {
-      //     await Location.update(
-      //       { active: false },
-      //       { where: { id: locationId } },
-      //     );
-      //   }
-      // }
       const days =
         (new Date(toDate).getTime() - new Date(startDate).getTime()) /
         (1000 * 60 * 60 * 24);
@@ -171,11 +140,13 @@ export class BookingsService {
         { transaction },
       );
       await transaction.commit();
+      await this.redis.del(lock_key);
       return {
         success: true,
         id: booking.dataValues.id,
       };
     } catch (error) {
+      await this.redis.del(lock_key)
       await transaction.rollback();
       throw error;
     }
@@ -222,10 +193,7 @@ export class BookingsService {
       throw new ConflictException('Booking is already cancelled.');
     }
     await Bookings.update({ status: 'cancelled' }, { where: { id: id } });
-    // await Location.update(
-    //   { active: true },
-    //   { where: { id: isBookingExists.dataValues.location_id } },
-    // );
+
     return {
       success: true,
     };
@@ -244,11 +212,62 @@ export class BookingsService {
       );
     }
 
-    const fromDate = new Date(isBookingExists.dataValues.start_date ) ;
-    const endDate = new Date( isBookingExists.dataValues.to_date )
-    const totalPrice =  ( endDate.getDate() - fromDate.getDate() ) * ( isBookingExists.dataValues.vehicle_price ) ;  
+    const booking = isBookingExists.dataValues;
 
-    await Bookings.update({ ...data , total_price : totalPrice }, { where: { id: id, user_id: user.id } });
+    const effectiveStartDate = data.start_date ?? booking.start_date;
+    const effectiveEndDate = data.end_date ?? booking.to_date;
+    const effectiveStartTime = data.start_time ?? booking.start_time;
+    const effectiveEndTime = data.end_time ?? booking.end_time;
+
+    if (new Date(booking.start_date) <= new Date()) {
+      throw new BadRequestException('This booking has already started and cannot be modified.');
+    }
+
+    if (data.start_date && new Date(data.start_date) <= new Date()) {
+      throw new BadRequestException('start_date must be in the future.');
+    }
+
+    if (new Date(effectiveStartDate) >= new Date(effectiveEndDate)) {
+      throw new BadRequestException('start_date must be before end_date.');
+    }
+
+    const availability = await Availability.findOne({
+      where: { vehicle_id: booking.vehicle_id, location_id: booking.location_id },
+    });
+    if (!availability) {
+      throw new BadRequestException('Vehicle is not available at this location.');
+    }
+
+    const overlappingBookings = await Bookings.findAll({
+      where: {
+        id: { [Op.ne]: id },
+        location_id: booking.location_id,
+        vehicle_id: booking.vehicle_id,
+        status: 'inprogress',
+        [Op.and]: [
+          Sequelize.literal(
+            `(start_date::date + start_time::time) <= ('${effectiveEndDate}'::date + '${effectiveEndTime}'::time)`,
+          ),
+          Sequelize.literal(
+            `(to_date::date + end_time::time) > ('${effectiveStartDate}'::date + '${effectiveStartTime}'::time)`,
+          ),
+        ],
+      },
+    });
+
+    if (availability.dataValues.units <= overlappingBookings.length) {
+      throw new ConflictException('No units available for the updated time slot.');
+    }
+
+    const days =
+      (new Date(effectiveEndDate).getTime() - new Date(effectiveStartDate).getTime()) /
+      (1000 * 60 * 60 * 24);
+    const totalPrice = days * booking.vehicle_price;
+
+    await Bookings.update(
+      { ...data, to_date: data.end_date, total_price: totalPrice },
+      { where: { id: id, user_id: user.id } },
+    );
     return { success: true };
   }
 }

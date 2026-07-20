@@ -31,6 +31,13 @@ export class LocationController {
     @Query('start_time') start_time: string,
     @Query('end_time') end_time: string,
   ) {
+    const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!start_date || !to_date || !start_time || !end_time) {
+      throw new BadRequestException('start_date, to_date, start_time and end_time are required.');
+    }
+    if (!TIME_REGEX.test(start_time) || !TIME_REGEX.test(end_time)) {
+      throw new BadRequestException('time must be in HH:mm format (e.g. 09:00, 23:59)');
+    }
     const startDate = new Date(start_date);
     const toDate = new Date(to_date);
     if (

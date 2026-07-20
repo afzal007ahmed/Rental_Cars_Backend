@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Location } from './models/location.model';
 import { literal, Op } from 'sequelize';
 import { Availability } from 'src/availability/models/availability.model';
 import { Vehicle } from 'src/vehicle/models/vehicle.model';
 import { Bookings } from 'src/bookings/models/bookings.model';
 import { Images } from 'src/images/models/image.model';
+import Redis from 'ioredis';
 
 function findDistanceQuery(long: number, lat: number) {
   return ` (
@@ -20,8 +21,9 @@ function findDistanceQuery(long: number, lat: number) {
 
 @Injectable()
 export class LocationService {
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
   async getAllLocations() {
-    return await Location.findAll() ;
+    return await Location.findAll();
   }
   async findLocationInTheRange(long: number, lat: number) {
     const range = 50;
@@ -74,6 +76,24 @@ export class LocationService {
       },
     });
 
+    const allHoldBookings: string[] = [];
+
+    for (const vid of allVehicleIds) {
+      const pattern = `${locationId}:${vid}:*`;
+      let cursor = '0';
+      do {
+        const [nextCursor, keys] = await this.redis.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          100,
+        );
+        cursor = nextCursor;
+        allHoldBookings.push(...keys);
+      } while (cursor !== '0');
+    }
+
     const unitsBookedPerVehicle = bookings.reduce((first, second) => {
       second = second.dataValues;
 
@@ -83,18 +103,31 @@ export class LocationService {
       const existingStart = new Date(
         `${second.start_date}T${second.start_time}`,
       );
-
       const existingEnd = new Date(`${second.to_date}T${second.end_time}`);
-
       const requestedStart = new Date(`${startDate}T${start_time}`);
-
       const requestedEnd = new Date(`${toDate}T${end_time}`);
 
       if (existingStart <= requestedEnd && existingEnd >= requestedStart) {
         first[second.vehicle_id]++;
       }
+
       return first;
-    }, {});
+    }, {} as Record<string, number>);
+
+    // count redis locked timeslots that overlap with the requested range
+    const requestedStart = new Date(`${startDate}T${start_time}`);
+    const requestedEnd = new Date(`${toDate}T${end_time}`);
+
+    for (const key of allHoldBookings) {
+      const raw = await this.redis.get(key);
+      if (!raw) continue;
+      const { startDateTime, endDateTime, vehicleId } = JSON.parse(raw);
+      const lockedStart = new Date(startDateTime);
+      const lockedEnd = new Date(endDateTime);
+      if (lockedStart < requestedEnd && lockedEnd > requestedStart) {
+        unitsBookedPerVehicle[vehicleId] = (unitsBookedPerVehicle[vehicleId] || 0) + 1;
+      }
+    }
 
     const vehicleImages = await Images.findAll({
       where: { vehicle_id: { [Op.in]: allVehicleIds } },

@@ -3,9 +3,10 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { Bookings } from './models/bookings.model';
 import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
+import { RedisModule } from 'src/redis/redis.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Bookings])],
+  imports: [SequelizeModule.forFeature([Bookings]) , RedisModule],
   providers: [BookingsService],
   controllers: [BookingsController],
 })

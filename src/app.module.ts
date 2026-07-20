@@ -4,8 +4,6 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { config } from '../config/index';
 import { AuthModule } from './auth/auth.module';
@@ -17,6 +15,7 @@ import { VehicleModule } from './vehicle/vehicle.module';
 import { ImagesModule } from './images/images.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { CheckoutModule } from './checkout/checkout.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -33,13 +32,12 @@ import { CheckoutModule } from './checkout/checkout.module';
     VehicleModule,
     ImagesModule,
     BookingsModule,
-    CheckoutModule
+    CheckoutModule,
+    RedisModule
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('users' , 'bookings' , 'locations');
+    consumer.apply(AuthMiddleware).forRoutes('users' , 'bookings' , 'locations' , 'checkout');
   }
 }

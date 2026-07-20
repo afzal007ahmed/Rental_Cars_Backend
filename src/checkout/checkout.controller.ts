@@ -6,31 +6,35 @@ import {
   Query,
 } from '@nestjs/common';
 import { CheckoutService } from './checkout.service';
+import { CheckoutDto } from './dto/checkout-dto';
 
 @Controller('checkout')
 export class CheckoutController {
   constructor(private readonly checkoutService: CheckoutService) {}
+
   @Get('/:locationId/:vehicleId')
   async checkoutDetails(
     @Param('locationId') locationId: string,
     @Param('vehicleId') vehicleId: string,
-    @Query('start_date') startDate: Date,
-    @Query('to_date') endDate: Date,
+    @Query() query: CheckoutDto,
   ) {
-    startDate = new Date(startDate);
-    endDate = new Date(endDate);
-    if (
-      isNaN(startDate.getDate()) ||
-      isNaN(endDate.getDate()) ||
-      startDate >= endDate
-    ) {
-      throw new BadRequestException();
+    const startDate = new Date(query.start_date);
+    const endDate = new Date(query.to_date);
+
+    if (startDate >= endDate) {
+      throw new BadRequestException('start_date must be before to_date');
     }
+
     return this.checkoutService.checkoutDetails(
       locationId,
       vehicleId,
       startDate,
       endDate,
+      query.start_date,
+      query.to_date,
+      query.start_time,
+      query.end_time,
+      query.lock_key
     );
   }
 }
