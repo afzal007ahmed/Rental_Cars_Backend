@@ -16,6 +16,7 @@ import { ImagesModule } from './images/images.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { RedisModule } from './redis/redis.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { RedisModule } from './redis/redis.module';
     ImagesModule,
     BookingsModule,
     CheckoutModule,
-    RedisModule
+    RedisModule,
+    EmailModule,
   ],
 })
 export class AppModule implements NestModule {

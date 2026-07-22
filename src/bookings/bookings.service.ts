@@ -6,6 +6,7 @@ import {
   Injectable,
   NotAcceptableException,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { Op, Sequelize } from 'sequelize';
@@ -15,6 +16,7 @@ import { Vehicle } from 'src/vehicle/models/vehicle.model';
 import { Bookings } from './models/bookings.model';
 import { User } from 'src/user/models/user.model';
 import Redis from 'ioredis';
+import { ClientKafka } from '@nestjs/microservices';
 interface UserDataInterface {
   guest: boolean;
   id: string;
@@ -32,11 +34,16 @@ interface BookingUpdateInterface {
 }
 
 @Injectable()
-export class BookingsService {
+export class BookingsService implements OnModuleInit {
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    @Inject('CLIENT_KAFKA') private readonly kafka: ClientKafka,
   ) {}
+
+  async onModuleInit() {
+    await this.kafka.connect();
+  }
   async bookAVehicle(
     locationId: string,
     vehicleId: string,
@@ -45,7 +52,7 @@ export class BookingsService {
     user: UserDataInterface,
     startTime: string,
     endTime: string,
-    lock_key : string ,
+    lock_key: string,
     guestName?: string,
     guestEmail?: string,
     dropLocationId?: string,
@@ -81,7 +88,6 @@ export class BookingsService {
         transaction,
         lock: transaction.LOCK.UPDATE,
       });
-
 
       //all booking which are overlapping
       const allBookings = await Bookings.findAll({
@@ -141,12 +147,15 @@ export class BookingsService {
       );
       await transaction.commit();
       await this.redis.del(lock_key);
+      this.kafka.emit('booking-completed', {
+        booking_id: booking.dataValues.id,
+      });
       return {
         success: true,
         id: booking.dataValues.id,
       };
     } catch (error) {
-      await this.redis.del(lock_key)
+      await this.redis.del(lock_key);
       await transaction.rollback();
       throw error;
     }
@@ -220,7 +229,9 @@ export class BookingsService {
     const effectiveEndTime = data.end_time ?? booking.end_time;
 
     if (new Date(booking.start_date) <= new Date()) {
-      throw new BadRequestException('This booking has already started and cannot be modified.');
+      throw new BadRequestException(
+        'This booking has already started and cannot be modified.',
+      );
     }
 
     if (data.start_date && new Date(data.start_date) <= new Date()) {
@@ -232,10 +243,15 @@ export class BookingsService {
     }
 
     const availability = await Availability.findOne({
-      where: { vehicle_id: booking.vehicle_id, location_id: booking.location_id },
+      where: {
+        vehicle_id: booking.vehicle_id,
+        location_id: booking.location_id,
+      },
     });
     if (!availability) {
-      throw new BadRequestException('Vehicle is not available at this location.');
+      throw new BadRequestException(
+        'Vehicle is not available at this location.',
+      );
     }
 
     const overlappingBookings = await Bookings.findAll({
@@ -256,11 +272,14 @@ export class BookingsService {
     });
 
     if (availability.dataValues.units <= overlappingBookings.length) {
-      throw new ConflictException('No units available for the updated time slot.');
+      throw new ConflictException(
+        'No units available for the updated time slot.',
+      );
     }
 
     const days =
-      (new Date(effectiveEndDate).getTime() - new Date(effectiveStartDate).getTime()) /
+      (new Date(effectiveEndDate).getTime() -
+        new Date(effectiveStartDate).getTime()) /
       (1000 * 60 * 60 * 24);
     const totalPrice = days * booking.vehicle_price;
 
