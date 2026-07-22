@@ -21,6 +21,10 @@ export class CheckoutController {
     const startDate = new Date(query.start_date);
     const endDate = new Date(query.to_date);
 
+    if (startDate < new Date()) {
+      throw new BadRequestException('start_date must be today or in the future.');
+    }
+
     if (startDate >= endDate) {
       throw new BadRequestException('start_date must be before to_date');
     }
