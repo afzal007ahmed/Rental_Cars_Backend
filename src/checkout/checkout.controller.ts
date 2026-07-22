@@ -21,7 +21,10 @@ export class CheckoutController {
     const startDate = new Date(query.start_date);
     const endDate = new Date(query.to_date);
 
-    if (startDate < new Date()) {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    if (query.start_date < todayStr) {
       throw new BadRequestException('start_date must be today or in the future.');
     }
 

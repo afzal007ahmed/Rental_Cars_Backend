@@ -4,9 +4,9 @@ import { config } from '../../config';
 export const RedisProvider = {
   provide: 'REDIS_CLIENT',
   useFactory: () => {
-    return new Redis({
-      host: config.redis.host,
-      port: Number(config.redis.port),
-    });
+    if (!config.redis.url) {
+      throw new Error('REDIS_URL is not defined');
+    }
+    return new Redis(config.redis.url);
   },
 };
