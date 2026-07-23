@@ -57,7 +57,7 @@ export class Bookings extends Model {
   to_date: string;
 
   @Column({
-    type: DataType.ENUM('inprogress', 'completed', 'cancelled'),
+    type: DataType.ENUM('pending', 'inprogress', 'completed', 'cancelled'),
     defaultValue: 'pending',
     allowNull: false,
   })
