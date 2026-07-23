@@ -17,6 +17,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { RedisModule } from './redis/redis.module';
 import { EmailModule } from './email/email.module';
+import { ProcessedEventsModule } from './processed-events/processed-events.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { EmailModule } from './email/email.module';
     CheckoutModule,
     RedisModule,
     EmailModule,
+    ProcessedEventsModule,
   ],
 })
 export class AppModule implements NestModule {
