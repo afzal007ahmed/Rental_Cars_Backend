@@ -25,9 +25,6 @@ export const config = {
   },
 
   kafka: {
-    broker: process.env.KAFKA_BROKER!,
-    username: process.env.KAFKA_USERNAME!,
-    password: process.env.KAFKA_PASSWORD!,
     clientOptions: {
       brokers: [process.env.KAFKA_BROKER!],
       ssl: { ca: [require('fs').readFileSync('./certificates/ca.pem')] },
