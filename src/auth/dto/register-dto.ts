@@ -3,7 +3,6 @@ import {
   IsString,
   IsEmail,
   IsStrongPassword,
-  IsBoolean,
 } from 'class-validator';
 
 export class RegisterDto {
@@ -24,7 +23,4 @@ export class RegisterDto {
   )
   @IsNotEmpty()
   password: string;
-  @IsBoolean()
-  @IsNotEmpty()
-  guest: boolean;
 }

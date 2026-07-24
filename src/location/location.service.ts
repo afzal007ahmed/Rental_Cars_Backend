@@ -94,25 +94,28 @@ export class LocationService {
       } while (cursor !== '0');
     }
 
-    const unitsBookedPerVehicle = bookings.reduce((first, second) => {
-      second = second.dataValues;
+    const unitsBookedPerVehicle = bookings.reduce(
+      (first, second) => {
+        second = second.dataValues;
 
-      if (!first[second.vehicle_id]) {
-        first[second.vehicle_id] = 0;
-      }
-      const existingStart = new Date(
-        `${second.start_date}T${second.start_time}`,
-      );
-      const existingEnd = new Date(`${second.to_date}T${second.end_time}`);
-      const requestedStart = new Date(`${startDate}T${start_time}`);
-      const requestedEnd = new Date(`${toDate}T${end_time}`);
+        if (!first[second.vehicle_id]) {
+          first[second.vehicle_id] = 0;
+        }
+        const existingStart = new Date(
+          `${second.start_date}T${second.start_time}`,
+        );
+        const existingEnd = new Date(`${second.to_date}T${second.end_time}`);
+        const requestedStart = new Date(`${startDate}T${start_time}`);
+        const requestedEnd = new Date(`${toDate}T${end_time}`);
 
-      if (existingStart <= requestedEnd && existingEnd >= requestedStart) {
-        first[second.vehicle_id]++;
-      }
+        if (existingStart <= requestedEnd && existingEnd >= requestedStart) {
+          first[second.vehicle_id]++;
+        }
 
-      return first;
-    }, {} as Record<string, number>);
+        return first;
+      },
+      {} as Record<string, number>,
+    );
 
     // count redis locked timeslots that overlap with the requested range
     const requestedStart = new Date(`${startDate}T${start_time}`);
@@ -124,8 +127,9 @@ export class LocationService {
       const { startDateTime, endDateTime, vehicleId } = JSON.parse(raw);
       const lockedStart = new Date(startDateTime);
       const lockedEnd = new Date(endDateTime);
-      if (lockedStart < requestedEnd && lockedEnd > requestedStart) {
-        unitsBookedPerVehicle[vehicleId] = (unitsBookedPerVehicle[vehicleId] || 0) + 1;
+      if (lockedStart <= requestedEnd && lockedEnd >= requestedStart) {
+        unitsBookedPerVehicle[vehicleId] =
+          (unitsBookedPerVehicle[vehicleId] || 0) + 1;
       }
     }
 

@@ -23,7 +23,10 @@ export class EmailService {
     },
   });
 
-  async sendBookingConfirmation(bookingId: string, meta: KafkaMeta): Promise<void> {
+  async sendBookingConfirmation(
+    bookingId: string,
+    meta: KafkaMeta,
+  ): Promise<void> {
     // Store event record with pending status before any processing
     const eventRecord = await ProcessedEvent.create({
       event_id: `${meta.topic}-${meta.partition}-${meta.offset}`,
@@ -43,7 +46,10 @@ export class EmailService {
       });
 
       if (!booking) {
-        await eventRecord.update({ status: 'failed', error: 'Booking not found' });
+        await eventRecord.update({
+          status: 'failed',
+          error: 'Booking not found',
+        });
         return;
       }
 
@@ -60,13 +66,19 @@ export class EmailService {
       } else if (b.user_id) {
         const user = await User.findOne({ where: { id: b.user_id } });
         if (!user) {
-          await eventRecord.update({ status: 'failed', error: 'User not found' });
+          await eventRecord.update({
+            status: 'failed',
+            error: 'User not found',
+          });
           return;
         }
         toEmail = user.dataValues.email as string;
         recipientName = user.dataValues.name as string;
       } else {
-        await eventRecord.update({ status: 'failed', error: 'No recipient found' });
+        await eventRecord.update({
+          status: 'failed',
+          error: 'No recipient found',
+        });
         return;
       }
 
@@ -92,11 +104,15 @@ export class EmailService {
               <td style="padding: 10px; font-weight: bold;">Pickup Location</td>
               <td style="padding: 10px;">${pickup.name ?? ''}, ${pickup.city ?? ''}, ${pickup.state ?? ''}</td>
             </tr>
-            ${drop ? `
+            ${
+              drop
+                ? `
             <tr>
               <td style="padding: 10px; font-weight: bold;">Drop Location</td>
               <td style="padding: 10px;">${drop.name}, ${drop.city}, ${drop.state}</td>
-            </tr>` : ''}
+            </tr>`
+                : ''
+            }
             <tr style="background: #f5f5f5;">
               <td style="padding: 10px; font-weight: bold;">From</td>
               <td style="padding: 10px;">${b.start_date} at ${b.start_time}</td>
@@ -130,7 +146,10 @@ export class EmailService {
 
       await eventRecord.update({ status: 'success' });
     } catch (err) {
-      await eventRecord.update({ status: 'failed', error: err?.message ?? 'Unknown error' });
+      await eventRecord.update({
+        status: 'failed',
+        error: err?.message ?? 'Unknown error',
+      });
     }
   }
 }

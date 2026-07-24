@@ -9,7 +9,10 @@ import { config } from '../../config';
         name: 'CLIENT_KAFKA',
         transport: Transport.KAFKA,
         options: {
-          client: { clientId: 'booking-service', ...config.kafka.clientOptions },
+          client: {
+            clientId: 'booking-service',
+            ...config.kafka.clientOptions,
+          },
         },
       },
     ]),

@@ -7,7 +7,7 @@ import { RedisModule } from 'src/redis/redis.module';
 import { KafkaModule } from 'src/kafka/kafka.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Bookings]) , RedisModule , KafkaModule],
+  imports: [SequelizeModule.forFeature([Bookings]), RedisModule, KafkaModule],
   providers: [BookingsService],
   controllers: [BookingsController],
 })

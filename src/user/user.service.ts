@@ -17,11 +17,11 @@ export class UserService {
     const verify = await bcrypt.compare(password, hashedPassword);
     return verify;
   }
-  async createUser(body: RegisterDto) {
+  async createUser(body: RegisterDto & { guest: false }) {
     return (await User.create(body)).dataValues;
   }
   async me(user: UserInterface) {
-    let data : any;
+    let data: any;
     if (user.guest) {
       data = { name: 'GUEST', guest: true };
     } else {
@@ -30,8 +30,8 @@ export class UserService {
     if (user.guest) {
       return data;
     } else {
-      const { password, ...userDetails } =
-        data?.dataValues as UserTableInterface;
+      const userDetails = { ...(data?.dataValues as UserTableInterface) };
+      delete userDetails.password;
       return userDetails;
     }
   }

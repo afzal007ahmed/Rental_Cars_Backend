@@ -36,7 +36,8 @@ export class User extends Model<UserTableInterface> {
   guest: boolean;
   @Column({
     type: DataType.STRING,
-    allowNull: true,
+    allowNull: false,
+    unique: true,
   })
   email: string;
   @Column({

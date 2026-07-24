@@ -9,13 +9,12 @@ export class AuthMiddleware implements NestMiddleware {
       if (!authorization) {
         throw new UnauthorizedException('token is missing');
       }
-      const bearerToken = authorization.split(' ')[0];
-      if (!bearerToken) {
+      const [scheme, token] = authorization.split(' ');
+      if (scheme !== 'Bearer') {
         throw new UnauthorizedException(
           'Bearer keyword is missing from the header',
         );
       }
-      const token = authorization.split(' ')[1];
       if (!token) {
         throw new UnauthorizedException('Auth token is missing');
       }

@@ -13,6 +13,12 @@ import { Images } from 'src/images/models/image.model';
 import { Location } from 'src/location/models/location.model';
 import { Vehicle } from 'src/vehicle/models/vehicle.model';
 
+interface UserDataInterface {
+  guest: boolean;
+  id?: string;
+  sessionId?: string;
+}
+
 @Injectable()
 export class CheckoutService {
   constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
@@ -27,6 +33,7 @@ export class CheckoutService {
     startTime: string,
     endTime: string,
     lock_key?: string,
+    user?: UserDataInterface,
   ) {
     const isVehicleExists = await Vehicle.findOne({ where: { id: vehicleId } });
     if (!isVehicleExists) {
@@ -47,19 +54,52 @@ export class CheckoutService {
       where: { vehicle_id: vehicleId, location_id: locationId },
       include: [{ model: Vehicle, include: [Images] }],
     });
+    if (!checkoutData) {
+      throw new BadRequestException(
+        'Vehicle is not available at this location.',
+      );
+    }
 
-    const costOfVehicle = checkoutData?.dataValues.vehicle.dataValues.price;
+    const costOfVehicle = checkoutData.dataValues.vehicle.dataValues.price;
 
     if (lock_key) {
-      const ttl = await this.redis.ttl(lock_key);
-      if (ttl === -2) {
+      const rawHold = await this.redis.get(lock_key);
+      if (!rawHold) {
         throw new GoneException(
           'Checkout session expired. Please go back and try again.',
         );
       }
+      let hold: {
+        locationId: string;
+        vehicleId: string;
+        startDateTime: string;
+        endDateTime: string;
+        holderId: string;
+      };
+      try {
+        hold = JSON.parse(rawHold) as typeof hold;
+      } catch {
+        throw new GoneException(
+          'Checkout session is invalid. Please try again.',
+        );
+      }
+      const holderId = user?.guest ? user.sessionId : user?.id;
+      if (
+        !holderId ||
+        hold.holderId !== holderId ||
+        hold.locationId !== locationId ||
+        hold.vehicleId !== vehicleId ||
+        hold.startDateTime !== `${startDateStr}T${startTime}` ||
+        hold.endDateTime !== `${toDateStr}T${endTime}`
+      ) {
+        throw new GoneException(
+          'Checkout session does not match this request.',
+        );
+      }
+      const ttl = await this.redis.ttl(lock_key);
       return {
         data: {
-          ...checkoutData?.dataValues,
+          ...checkoutData.dataValues,
           pickup: isLocationExists.dataValues,
         },
         lock_key: lock_key,
@@ -68,16 +108,7 @@ export class CheckoutService {
       };
     }
 
-    // get total units for this vehicle at this location
-    const availability = await Availability.findOne({
-      where: { vehicle_id: vehicleId, location_id: locationId },
-    });
-    if (!availability) {
-      throw new BadRequestException(
-        'Vehicle is not available at this location.',
-      );
-    }
-    const totalUnits = availability.dataValues.units;
+    const totalUnits = checkoutData.dataValues.units;
 
     // count overlapping bookings
     const overlappingBookings = await Bookings.findAll({
@@ -122,7 +153,7 @@ export class CheckoutService {
       const { startDateTime, endDateTime } = JSON.parse(raw);
       const lockedStart = new Date(startDateTime);
       const lockedEnd = new Date(endDateTime);
-      if (lockedStart < requestedEnd && lockedEnd > requestedStart) {
+      if (lockedStart <= requestedEnd && lockedEnd >= requestedStart) {
         redisLockCount++;
       }
     }
@@ -135,15 +166,17 @@ export class CheckoutService {
     //set new lock with 5 min TTL
     const newKey = `${locationId}:${vehicleId}:${Date.now()}`;
     const value = JSON.stringify({
+      locationId,
       vehicleId,
       startDateTime: `${startDateStr}T${startTime}`,
       endDateTime: `${toDateStr}T${endTime}`,
+      holderId: user?.guest ? user.sessionId : user?.id,
     });
     await this.redis.set(newKey, value, 'EX', 300);
 
     return {
       data: {
-        ...checkoutData?.dataValues,
+        ...checkoutData.dataValues,
         pickup: isLocationExists.dataValues,
       },
       lock_key: newKey,

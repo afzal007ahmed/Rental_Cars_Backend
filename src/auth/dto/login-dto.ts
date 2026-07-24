@@ -4,12 +4,15 @@ export class LoginDto {
   @IsEmail()
   email: string;
   @IsNotEmpty()
-  @IsStrongPassword({
-    minLength : 8 ,
-    minLowercase : 1 ,
-    minUppercase : 1 ,
-    minSymbols : 1 ,
-    minNumbers : 1 
-  } , { message : "Please follow the proper password format."})
-  password : string 
+  @IsStrongPassword(
+    {
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minSymbols: 1,
+      minNumbers: 1,
+    },
+    { message: 'Please follow the proper password format.' },
+  )
+  password: string;
 }

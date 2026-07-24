@@ -14,7 +14,7 @@ export class Location extends Model {
   declare id: string;
 
   @HasMany(() => Bookings)
-  bookings : Bookings[]
+  bookings: Bookings[];
 
   @HasMany(() => Availability)
   available: Availability[];

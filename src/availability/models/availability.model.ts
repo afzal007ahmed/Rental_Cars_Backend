@@ -11,6 +11,7 @@ import { Vehicle } from 'src/vehicle/models/vehicle.model';
 
 @Table({
   tableName: 'availability',
+  indexes: [{ unique: true, fields: ['location_id', 'vehicle_id'] }],
 })
 export class Availability extends Model {
   @ForeignKey(() => Location)

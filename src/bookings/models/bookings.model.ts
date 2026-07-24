@@ -113,6 +113,9 @@ export class Bookings extends Model {
   })
   drop_location_id: string;
 
-  @BelongsTo(() => Location, { foreignKey: 'drop_location_id', as: 'dropLocation' })
+  @BelongsTo(() => Location, {
+    foreignKey: 'drop_location_id',
+    as: 'dropLocation',
+  })
   drop_location: Location;
 }

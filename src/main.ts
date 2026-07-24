@@ -8,7 +8,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(
-    new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
   );
 
   app.enableCors({
@@ -19,16 +23,21 @@ async function bootstrap() {
 
   await app.listen(config.server.port ?? 3000);
 
-  setImmediate(async () => {
-    NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
+  setImmediate(() => {
+    void NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
       transport: Transport.KAFKA,
       options: {
-        client: { clientId: 'notification-service', ...config.kafka.clientOptions },
+        client: {
+          clientId: 'notification-service',
+          ...config.kafka.clientOptions,
+        },
         consumer: { groupId: 'email-group' },
         subscribe: { fromBeginning: false },
       },
-    }).then(consumer => consumer.listen()).catch(() => {});
+    })
+      .then((consumer) => consumer.listen())
+      .catch(() => undefined);
   });
 }
 
-bootstrap();
+void bootstrap();

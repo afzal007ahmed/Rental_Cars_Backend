@@ -10,15 +10,19 @@ import jwt from 'jsonwebtoken';
 import { config } from '../../config/index';
 import { RegisterDto } from './dto/register-dto';
 import bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
+import { UniqueConstraintError } from 'sequelize';
 
 @Injectable()
 export class AuthService {
   constructor(private readonly userService: UserService) {}
 
-  async guestLogin() {
+  guestLogin() {
+    const sessionId = randomUUID();
     const token = jwt.sign(
       {
         guest: true,
+        sessionId,
       },
       config.jwt.secret,
       {
@@ -30,6 +34,7 @@ export class AuthService {
       user: {
         name: 'GUEST',
         guest: true,
+        sessionId,
       },
     };
   }
@@ -49,7 +54,11 @@ export class AuthService {
     const token = jwt.sign(payload, config.jwt.secret, {
       expiresIn: `${config.jwt.expiry}d`,
     });
-    const { password, email, ...userData } = isUserExists;
+    const userData = {
+      id: isUserExists.id,
+      name: isUserExists.name,
+      guest: isUserExists.guest,
+    };
     return {
       token,
       user: userData,
@@ -61,13 +70,28 @@ export class AuthService {
       throw new ConflictException('User already exists.Please login');
     }
     const hashPassword = await bcrypt.hash(body.password, 10);
-    body.password = hashPassword;
-    const createdUser = await this.userService.createUser(body);
+    let createdUser;
+    try {
+      createdUser = await this.userService.createUser({
+        ...body,
+        password: hashPassword,
+        guest: false,
+      });
+    } catch (error) {
+      if (error instanceof UniqueConstraintError) {
+        throw new ConflictException('User already exists.Please login');
+      }
+      throw error;
+    }
     const payload = { id: createdUser.id, guest: createdUser.guest };
     const token = jwt.sign(payload, config.jwt.secret, {
       expiresIn: `${config.jwt.expiry}d`,
     });
-    const { password, email, ...userData } = createdUser;
+    const userData = {
+      id: createdUser.id,
+      name: createdUser.name,
+      guest: createdUser.guest,
+    };
     return {
       token,
       user: userData,

@@ -20,13 +20,13 @@ export class BookingsController {
   constructor(private readonly bookingService: BookingsService) {}
   @Post('/')
   async bookAVehicle(@Body() body: BookingDto, @Request() req: any) {
-    const to_date = new Date(body.toDate);
-    const start_date = new Date(body.startDate);
+    const endDateTime = new Date(`${body.toDate}T${body.end_time}`);
+    const startDateTime = new Date(`${body.startDate}T${body.start_time}`);
 
     if (!isValidDate(body.toDate) || !isValidDate(body.startDate)) {
       throw new NotAcceptableException('Dates are not in the correct format.');
     }
-    if (start_date >= to_date) {
+    if (startDateTime >= endDateTime) {
       throw new BadRequestException("It's not a valid range.");
     }
 
@@ -69,8 +69,8 @@ export class BookingsController {
     @Param('id') id: string,
     @Body() data: BookingUpdateDto,
   ) {
-    let start_date: string = data.start_date;
-    let end_date: string = data.end_date;
+    const start_date: string = data.start_date;
+    const end_date: string = data.end_date;
 
     if (start_date) {
       if (!isValidDate(start_date)) {

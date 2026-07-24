@@ -31,4 +31,3 @@ export class Images extends Model {
   })
   declare id: string;
 }
-

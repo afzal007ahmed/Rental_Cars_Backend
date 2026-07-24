@@ -4,6 +4,7 @@ import {
   GoneException,
   Inject,
   Injectable,
+  Logger,
   NotAcceptableException,
   NotFoundException,
   OnModuleInit,
@@ -20,6 +21,7 @@ import { ClientKafka } from '@nestjs/microservices';
 interface UserDataInterface {
   guest: boolean;
   id: string;
+  sessionId?: string;
 }
 
 interface BookingUpdateInterface {
@@ -35,14 +37,20 @@ interface BookingUpdateInterface {
 
 @Injectable()
 export class BookingsService implements OnModuleInit {
+  private readonly logger = new Logger(BookingsService.name);
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     @Inject('CLIENT_KAFKA') private readonly kafka: ClientKafka,
   ) {}
 
-  async onModuleInit() {
-    await this.kafka.connect();
+  onModuleInit() {
+    void this.kafka.connect().catch((error: unknown) => {
+      this.logger.error(
+        'Kafka producer is unavailable; booking notifications will not be published until it reconnects.',
+        error instanceof Error ? error.stack : undefined,
+      );
+    });
   }
   async bookAVehicle(
     locationId: string,
@@ -61,6 +69,34 @@ export class BookingsService implements OnModuleInit {
     const lock = await this.redis.ttl(lock_key);
     if (lock === -2) {
       throw new GoneException('Session expired. Please go back to checkout.');
+    }
+
+    const rawHold = await this.redis.get(lock_key);
+    if (!rawHold) {
+      throw new GoneException('Session expired. Please go back to checkout.');
+    }
+    let hold: {
+      locationId: string;
+      vehicleId: string;
+      startDateTime: string;
+      endDateTime: string;
+      holderId: string;
+    };
+    try {
+      hold = JSON.parse(rawHold) as typeof hold;
+    } catch {
+      throw new GoneException('Checkout session is invalid. Please try again.');
+    }
+    const holderId = user.guest ? user.sessionId : user.id;
+    if (
+      !holderId ||
+      hold.holderId !== holderId ||
+      hold.locationId !== locationId ||
+      hold.vehicleId !== vehicleId ||
+      hold.startDateTime !== `${startDate}T${startTime}` ||
+      hold.endDateTime !== `${toDate}T${endTime}`
+    ) {
+      throw new GoneException('Checkout session does not match this booking.');
     }
 
     const transaction = await this.sequelize.transaction();
@@ -107,13 +143,52 @@ export class BookingsService implements OnModuleInit {
         transaction,
       });
 
+      // Count active Redis holds for the same vehicle and overlapping time slot.
+      // Do not count this request's hold: it is being converted into this booking.
+      const lockPattern = `${locationId}:${vehicleId}:*`;
+      const allLockKeys: string[] = [];
+      let cursor = '0';
+      do {
+        const [nextCursor, keys] = await this.redis.scan(
+          cursor,
+          'MATCH',
+          lockPattern,
+          'COUNT',
+          100,
+        );
+        cursor = nextCursor;
+        allLockKeys.push(...keys);
+      } while (cursor !== '0');
+
+      const requestedStart = new Date(`${startDate}T${startTime}`);
+      const requestedEnd = new Date(`${toDate}T${endTime}`);
+      let redisLockCount = 0;
+
+      for (const key of allLockKeys) {
+        if (key === lock_key) continue;
+
+        const raw = await this.redis.get(key);
+        if (!raw) continue;
+
+        const { startDateTime, endDateTime } = JSON.parse(raw);
+        const lockedStart = new Date(startDateTime);
+        const lockedEnd = new Date(endDateTime);
+
+        if (lockedStart <= requestedEnd && lockedEnd >= requestedStart) {
+          redisLockCount++;
+        }
+      }
+
       if (!availability) {
         throw new BadRequestException(
           'Vehicle is not available at this location.',
         );
       }
 
-      if (availability.dataValues.units <= allBookings.length) {
+      if (
+        availability.dataValues.units <=
+        allBookings.length + redisLockCount
+      ) {
         throw new ConflictException(
           'This vehicle is not available for the selected time slot.',
         );
@@ -238,7 +313,10 @@ export class BookingsService implements OnModuleInit {
       throw new BadRequestException('start_date must be in the future.');
     }
 
-    if (new Date(effectiveStartDate) >= new Date(effectiveEndDate)) {
+    if (
+      new Date(`${effectiveStartDate}T${effectiveStartTime}`) >=
+      new Date(`${effectiveEndDate}T${effectiveEndTime}`)
+    ) {
       throw new BadRequestException('start_date must be before end_date.');
     }
 
@@ -265,7 +343,7 @@ export class BookingsService implements OnModuleInit {
             `(start_date::date + start_time::time) <= ('${effectiveEndDate}'::date + '${effectiveEndTime}'::time)`,
           ),
           Sequelize.literal(
-            `(to_date::date + end_time::time) > ('${effectiveStartDate}'::date + '${effectiveStartTime}'::time)`,
+            `(to_date::date + end_time::time) >= ('${effectiveStartDate}'::date + '${effectiveStartTime}'::time)`,
           ),
         ],
       },

@@ -1,9 +1,4 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { config } from '../config/index';
 import { AuthModule } from './auth/auth.module';
@@ -25,7 +20,7 @@ import { ProcessedEventsModule } from './processed-events/processed-events.modul
       uri: config.database.uri,
       dialect: 'postgres',
       autoLoadModels: true,
-      synchronize: true,
+      synchronize: config.environment !== 'production',
     }),
     AuthModule,
     UserModule,
@@ -42,6 +37,8 @@ import { ProcessedEventsModule } from './processed-events/processed-events.modul
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('users' , 'bookings' , 'locations' , 'checkout');
+    consumer
+      .apply(AuthMiddleware)
+      .forRoutes('users', 'bookings', 'locations', 'checkout');
   }
 }

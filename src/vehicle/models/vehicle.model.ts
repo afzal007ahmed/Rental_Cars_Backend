@@ -6,7 +6,6 @@ import { Images } from 'src/images/models/image.model';
 @Table({
   tableName: 'vehicles',
 })
-
 export class Vehicle extends Model {
   @Column({
     type: DataType.UUID,
@@ -14,15 +13,15 @@ export class Vehicle extends Model {
     primaryKey: true,
   })
   declare id: string;
- 
-  @HasMany(() => Availability)
-   availability : Availability[]
 
-  @HasMany(() => Images) 
-  images : Images[] 
+  @HasMany(() => Availability)
+  availability: Availability[];
+
+  @HasMany(() => Images)
+  images: Images[];
 
   @HasMany(() => Bookings)
-  bookings : Bookings[]
+  bookings: Bookings[];
 
   @Column({
     type: DataType.STRING,
@@ -39,7 +38,7 @@ export class Vehicle extends Model {
     allowNull: false,
   })
   price: number;
-    @Column({
+  @Column({
     type: DataType.TEXT,
     allowNull: false,
   })

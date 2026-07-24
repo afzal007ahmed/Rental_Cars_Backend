@@ -1,15 +1,25 @@
-import { IsDateString, IsOptional, IsString, IsEmail, Matches } from 'class-validator';
+import {
+  IsDateString,
+  IsOptional,
+  IsString,
+  IsEmail,
+  Matches,
+} from 'class-validator';
+import { IsValidCalendarDate } from 'src/utils/dateValidator';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
-const TIME_MSG = { message: 'time must be in HH:mm format (e.g. 09:00, 23:59)' };
+const TIME_MSG = {
+  message: 'time must be in HH:mm format (e.g. 09:00, 23:59)',
+};
 
 export class BookingUpdateDto {
-
   @IsDateString()
+  @IsValidCalendarDate()
   @IsOptional()
   start_date: string;
 
   @IsDateString()
+  @IsValidCalendarDate()
   @IsOptional()
   end_date: string;
 
